@@ -11,6 +11,7 @@ use easytodo::task::store::TaskStore;
 
 #[derive(Deserialize)]
 struct JsonRpcRequest {
+    #[allow(dead_code)]
     jsonrpc: String,
     #[serde(default)]
     id: Option<Value>,
