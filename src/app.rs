@@ -60,14 +60,16 @@ pub struct App {
 
 impl App {
     pub fn new(store: FsTaskStore, config: Config) -> Self {
+        let bindings = config.keybindings.clone();
+        let theme = Theme::from_config(&config.theme);
         App {
             mode: AppMode::Normal,
             store,
             config,
-            theme: Theme::default(),
+            theme,
             tasks: Vec::new(),
             filter: Filter::All,
-            task_list: TaskList::new(),
+            task_list: TaskList::new(bindings),
             command_bar: CommandBar::new(),
             modal: ModalState::new(),
             status_message: None,
@@ -393,6 +395,8 @@ impl App {
             }
             Action::Reload => {
                 self.config = Config::load().unwrap_or_else(|_| self.config.clone());
+                self.theme = Theme::from_config(&self.config.theme);
+                self.task_list.update_bindings(self.config.keybindings.clone());
                 if let Err(e) = self.refresh_tasks() {
                     self.set_status_message(format!("Reload error: {}", e));
                 } else {
@@ -538,6 +542,8 @@ impl App {
             match wf.action {
                 WatchedFileAction::ReloadConfig => {
                     self.config = Config::load().unwrap_or_else(|_| self.config.clone());
+                    self.theme = Theme::from_config(&self.config.theme);
+                    self.task_list.update_bindings(self.config.keybindings.clone());
                     self.set_status_message("Config reloaded".into());
                 }
                 WatchedFileAction::ReloadTasks => {
@@ -566,6 +572,8 @@ fn handle_events(app: &mut App) -> Result<()> {
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_e = key.code == KeyCode::Char('e')
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+            let is_ctrl_r = key.code == KeyCode::Char('r')
+                && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_q = key.code == KeyCode::Char('q')
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_b = key.code == KeyCode::Char('b')
@@ -589,6 +597,9 @@ fn handle_events(app: &mut App) -> Result<()> {
                     } else if is_ctrl_n {
                         app.command_bar.hide();
                         Some(Action::NewTaskPrefill)
+                    } else if is_ctrl_r {
+                        app.command_bar.hide();
+                        Some(Action::Reload)
                     } else if is_ctrl_b {
                         Some(Action::OpenConfig)
                     } else if is_ctrl_q {

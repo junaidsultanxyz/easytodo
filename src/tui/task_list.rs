@@ -1,3 +1,4 @@
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::{Alignment, Rect};
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
@@ -5,9 +6,9 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Frame;
 
 use easytodo::action::Action;
+use easytodo::config::KeybindingsConfig;
 use crate::app::App;
 use crate::tui::Component;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use easytodo::task::model::Filter;
 use easytodo::task::model::Status;
@@ -15,14 +16,20 @@ use easytodo::task::model::Status;
 pub struct TaskList {
     pub selected_index: usize,
     pub scroll_offset: usize,
+    bindings: KeybindingsConfig,
 }
 
 impl TaskList {
-    pub fn new() -> Self {
+    pub fn new(bindings: KeybindingsConfig) -> Self {
         TaskList {
             selected_index: 0,
             scroll_offset: 0,
+            bindings,
         }
+    }
+
+    pub fn update_bindings(&mut self, bindings: KeybindingsConfig) {
+        self.bindings = bindings;
     }
 
     pub fn clamp_selection(&mut self, max_len: usize) {
@@ -36,6 +43,29 @@ impl TaskList {
         }
     }
 
+    fn binding(&self, event: &KeyEvent, key: &str) -> bool {
+        if let Some(ch) = key.strip_prefix("Ctrl+") {
+            if ch.len() == 1 {
+                let c = ch.chars().next().unwrap().to_ascii_lowercase();
+                return event.code == KeyCode::Char(c)
+                    && event.modifiers.contains(KeyModifiers::CONTROL);
+            }
+            return false;
+        }
+        match key {
+            "Enter" => event.code == KeyCode::Enter,
+            "Space" => event.code == KeyCode::Char(' '),
+            "Esc" | "Escape" => event.code == KeyCode::Esc,
+            "Up" | "UpArrow" => event.code == KeyCode::Up,
+            "Down" | "DownArrow" => event.code == KeyCode::Down,
+            "Left" | "LeftArrow" => event.code == KeyCode::Left,
+            "Right" | "RightArrow" => event.code == KeyCode::Right,
+            s if s.len() == 1 => {
+                event.code == KeyCode::Char(s.chars().next().unwrap())
+            }
+            _ => false,
+        }
+    }
 }
 
 impl Component for TaskList {
@@ -135,37 +165,51 @@ impl Component for TaskList {
     }
 
     fn handle_input(&mut self, event: &KeyEvent) -> Option<Action> {
-        match event.code {
-            KeyCode::Char('j') | KeyCode::Down => Some(Action::MoveDown),
-            KeyCode::Char('k') | KeyCode::Up => Some(Action::MoveUp),
-            KeyCode::Enter | KeyCode::Char(' ') => Some(Action::ToggleDoneSelected),
-            KeyCode::Char('l') => Some(Action::ShowDetailSelected),
-            KeyCode::Char('d') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::DeleteSelected)
-            }
-            KeyCode::Char('n') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::NewTaskPrefill)
-            }
-            KeyCode::Char('b') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::OpenConfig)
-            }
-            KeyCode::Char('h') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::HelpCommand)
-            }
-            KeyCode::Char('p') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::ToggleCommandBar)
-            }
-            KeyCode::Char('e') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::EditTaskPrefill)
-            }
-            KeyCode::Char('o') => Some(Action::ShowDetailSelected),
-            KeyCode::Char('q') if event.modifiers.contains(KeyModifiers::CONTROL) => {
-                Some(Action::Quit)
-            }
-            KeyCode::Char('1') => Some(Action::SetFilter(Filter::All)),
-            KeyCode::Char('2') => Some(Action::SetFilter(Filter::Todo)),
-            KeyCode::Char('3') => Some(Action::SetFilter(Filter::Done)),
-            _ => None,
+        if self.binding(event, &self.bindings.move_down) || matches!(event.code, KeyCode::Down) {
+            return Some(Action::MoveDown);
         }
+        if self.binding(event, &self.bindings.move_up) || matches!(event.code, KeyCode::Up) {
+            return Some(Action::MoveUp);
+        }
+        if self.binding(event, &self.bindings.toggle_done) || event.code == KeyCode::Char(' ') {
+            return Some(Action::ToggleDoneSelected);
+        }
+        if self.binding(event, &self.bindings.show_detail) || event.code == KeyCode::Char('o') {
+            return Some(Action::ShowDetailSelected);
+        }
+        if self.binding(event, &self.bindings.filter_all) {
+            return Some(Action::SetFilter(Filter::All));
+        }
+        if self.binding(event, &self.bindings.filter_todo) {
+            return Some(Action::SetFilter(Filter::Todo));
+        }
+        if self.binding(event, &self.bindings.filter_done) {
+            return Some(Action::SetFilter(Filter::Done));
+        }
+        if self.binding(event, &self.bindings.new_task) {
+            return Some(Action::NewTaskPrefill);
+        }
+        if self.binding(event, &self.bindings.edit_task) {
+            return Some(Action::EditTaskPrefill);
+        }
+        if self.binding(event, &self.bindings.delete_task) {
+            return Some(Action::DeleteSelected);
+        }
+        if self.binding(event, &self.bindings.open_config) {
+            return Some(Action::OpenConfig);
+        }
+        if self.binding(event, &self.bindings.command_bar) {
+            return Some(Action::ToggleCommandBar);
+        }
+        if self.binding(event, &self.bindings.help) {
+            return Some(Action::HelpCommand);
+        }
+        if self.binding(event, &self.bindings.reload) {
+            return Some(Action::Reload);
+        }
+        if self.binding(event, &self.bindings.quit) {
+            return Some(Action::Quit);
+        }
+        None
     }
 }

@@ -83,6 +83,7 @@ Press **Ctrl+P** to open the command bar. Commands use quoted strings.
 | `Ctrl+D` | Delete the selected task |
 | `Ctrl+B` | Open config file |
 | `Ctrl+H` | Show help panel |
+| `Ctrl+R` | Reload config and tasks |
 | `Ctrl+Q` | Quit |
 | `Esc` | Close command bar / go back |
 
@@ -144,11 +145,41 @@ MCP tools available: `list_tasks`, `get_task`, `create_task`, `update_task`, `de
 
 ## Configuration
 
-Config file at `~/.config/easytodo/config.toml`:
+Config file at `~/.config/easytodo/config.toml` (see [`easytodo.example.toml`](easytodo.example.toml) for defaults):
 
 ```toml
 data_dir = "/home/user/easytodo"
+editor = "nvim"
+
+[theme]
+selected_bg = "rgb(60,60,80)"
+done_fg = "rgb(100,140,100)"
+border = "rgb(80,80,120)"
+command_bar_bg = "rgb(30,30,50)"
+modal_bg = "rgb(25,25,45)"
+title_fg = "rgb(180,180,220)"
+normal_bg = "rgb(20,20,35)"
+status_bar_fg = "rgb(130,130,160)"
+
+[keybindings]
+move_down = "j"
+move_up = "k"
+toggle_done = "Enter"
+show_detail = "l"
+filter_all = "1"
+filter_todo = "2"
+filter_done = "3"
+new_task = "Ctrl+N"
+edit_task = "Ctrl+E"
+delete_task = "Ctrl+D"
+open_config = "Ctrl+B"
+command_bar = "Ctrl+P"
+help = "Ctrl+H"
+reload = "Ctrl+R"
+quit = "Ctrl+Q"
 ```
+
+Colors support `rgb(R,G,B)` and `#RRGGBB` formats. Keybindings support single keys (`j`, `Enter`, `Space`, `Esc`, `Up`, `Down`) and `Ctrl+` prefix for control combinations.
 
 ## License
 

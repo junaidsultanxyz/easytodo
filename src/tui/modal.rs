@@ -356,6 +356,8 @@ impl ModalState {
                 Span::styled("Close/back", desc),
             ]),
             Line::from(Span::raw("")),
+            Line::from(Span::styled("  Theme & keys: edit ~/.config/easytodo/config.toml", desc)),
+            Line::from(Span::raw("")),
             Line::from(Span::styled("  [q/Esc to close]  ", desc)),
         ];
 
