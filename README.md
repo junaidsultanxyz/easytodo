@@ -141,7 +141,7 @@ claude mcp add easytodo -s command -- easytodo-mcp
 }
 ```
 
-MCP tools available: `list_tasks`, `get_task`, `create_task`, `update_task`, `delete_task`, `done_task`, `undone_task`, `help`.
+MCP tools available: `list_tasks`, `get_task`, `create_task`, `update_task`, `delete_task`, `done_task`, `undone_task`, `help`, `get_config`, `set_config`.
 
 ## Configuration
 

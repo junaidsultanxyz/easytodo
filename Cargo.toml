@@ -1,6 +1,6 @@
 [package]
 name = "easytodo"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2024"
 description = "A terminal-based todo app with file-based task storage, command bar, and MCP server"
 keywords = ["todo", "tui", "terminal", "productivity", "mcp"]

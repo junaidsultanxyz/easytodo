@@ -193,25 +193,113 @@ impl Config {
     }
 
     pub fn get(&self, key: &str) -> Option<String> {
-        match key {
+        let parts: Vec<&str> = key.splitn(2, '.').collect();
+        match parts[0] {
             "data_dir" => Some(self.data_dir.clone()),
             "editor" => Some(self.editor()),
+            "theme" => parts.get(1).and_then(|k| self.theme.get(*k)),
+            "keybindings" => parts.get(1).and_then(|k| self.keybindings.get(*k)),
             _ => None,
         }
     }
 
     pub fn set(&mut self, key: &str, value: &str) -> Result<()> {
-        match key {
+        let parts: Vec<&str> = key.splitn(2, '.').collect();
+        match parts[0] {
             "data_dir" => self.data_dir = value.to_string(),
             "editor" => self.editor = value.to_string(),
+            "theme" => {
+                let k = parts.get(1).ok_or_else(|| AppError::Config("Missing theme key".into()))?;
+                self.theme.set(k, value)?;
+            }
+            "keybindings" => {
+                let k = parts.get(1).ok_or_else(|| AppError::Config("Missing keybindings key".into()))?;
+                self.keybindings.set(k, value)?;
+            }
             _ => {
                 return Err(AppError::Config(format!(
-                    "Unknown config key: {}. Valid keys: data_dir, editor",
+                    "Unknown config key: '{}'. Valid: data_dir, editor, theme.<field>, keybindings.<field>",
                     key
                 )))
             }
         }
         self.save()?;
+        Ok(())
+    }
+}
+
+impl ThemeConfig {
+    fn get(&self, key: &str) -> Option<String> {
+        match key {
+            "selected_bg" => Some(self.selected_bg.clone()),
+            "done_fg" => Some(self.done_fg.clone()),
+            "border" => Some(self.border.clone()),
+            "command_bar_bg" => Some(self.command_bar_bg.clone()),
+            "modal_bg" => Some(self.modal_bg.clone()),
+            "title_fg" => Some(self.title_fg.clone()),
+            "normal_bg" => Some(self.normal_bg.clone()),
+            "status_bar_fg" => Some(self.status_bar_fg.clone()),
+            _ => None,
+        }
+    }
+
+    fn set(&mut self, key: &str, value: &str) -> Result<()> {
+        match key {
+            "selected_bg" => self.selected_bg = value.to_string(),
+            "done_fg" => self.done_fg = value.to_string(),
+            "border" => self.border = value.to_string(),
+            "command_bar_bg" => self.command_bar_bg = value.to_string(),
+            "modal_bg" => self.modal_bg = value.to_string(),
+            "title_fg" => self.title_fg = value.to_string(),
+            "normal_bg" => self.normal_bg = value.to_string(),
+            "status_bar_fg" => self.status_bar_fg = value.to_string(),
+            _ => return Err(AppError::Config(format!("Unknown theme key: '{}'", key))),
+        }
+        Ok(())
+    }
+}
+
+impl KeybindingsConfig {
+    fn get(&self, key: &str) -> Option<String> {
+        match key {
+            "move_down" => Some(self.move_down.clone()),
+            "move_up" => Some(self.move_up.clone()),
+            "toggle_done" => Some(self.toggle_done.clone()),
+            "show_detail" => Some(self.show_detail.clone()),
+            "filter_all" => Some(self.filter_all.clone()),
+            "filter_todo" => Some(self.filter_todo.clone()),
+            "filter_done" => Some(self.filter_done.clone()),
+            "new_task" => Some(self.new_task.clone()),
+            "edit_task" => Some(self.edit_task.clone()),
+            "delete_task" => Some(self.delete_task.clone()),
+            "open_config" => Some(self.open_config.clone()),
+            "command_bar" => Some(self.command_bar.clone()),
+            "help" => Some(self.help.clone()),
+            "reload" => Some(self.reload.clone()),
+            "quit" => Some(self.quit.clone()),
+            _ => None,
+        }
+    }
+
+    fn set(&mut self, key: &str, value: &str) -> Result<()> {
+        match key {
+            "move_down" => self.move_down = value.to_string(),
+            "move_up" => self.move_up = value.to_string(),
+            "toggle_done" => self.toggle_done = value.to_string(),
+            "show_detail" => self.show_detail = value.to_string(),
+            "filter_all" => self.filter_all = value.to_string(),
+            "filter_todo" => self.filter_todo = value.to_string(),
+            "filter_done" => self.filter_done = value.to_string(),
+            "new_task" => self.new_task = value.to_string(),
+            "edit_task" => self.edit_task = value.to_string(),
+            "delete_task" => self.delete_task = value.to_string(),
+            "open_config" => self.open_config = value.to_string(),
+            "command_bar" => self.command_bar = value.to_string(),
+            "help" => self.help = value.to_string(),
+            "reload" => self.reload = value.to_string(),
+            "quit" => self.quit = value.to_string(),
+            _ => return Err(AppError::Config(format!("Unknown keybindings key: '{}'", key))),
+        }
         Ok(())
     }
 }

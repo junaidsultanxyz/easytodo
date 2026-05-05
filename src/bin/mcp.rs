@@ -171,11 +171,28 @@ fn list_tools() -> Value {
                 "Show available commands and shortcuts",
                 json!({"type": "object", "properties": {}})
             ),
+            tool_def(
+                "get_config",
+                "Show current configuration (data_dir, editor, theme, keybindings)",
+                json!({"type": "object", "properties": {}})
+            ),
+            tool_def(
+                "set_config",
+                "Set a configuration value. Supports dot notation: data_dir, editor, theme.selected_bg, keybindings.move_down, etc.",
+                json!({
+                    "type": "object",
+                    "properties": {
+                        "key": string_schema("Config key, e.g. 'data_dir', 'editor', 'theme.border', 'keybindings.move_down'"),
+                        "value": string_schema("New value")
+                    },
+                    "required": ["key", "value"]
+                })
+            ),
         ]
     })
 }
 
-fn handle_tools_call(name: &str, args: &Value, store: &mut FsTaskStore) -> Result<Value, String> {
+fn handle_tools_call(name: &str, args: &Value, store: &mut FsTaskStore, config: &mut Config) -> Result<Value, String> {
     match name {
         "list_tasks" => {
             let filter = args
@@ -306,6 +323,48 @@ fn handle_tools_call(name: &str, args: &Value, store: &mut FsTaskStore) -> Resul
                 "content": [{"type": "text", "text": format!("Task marked as not done: {}", id)}]
             }))
         }
+        "get_config" => {
+            let cfg_json = serde_json::json!({
+                "data_dir": config.data_dir,
+                "editor": config.editor,
+                "theme": {
+                    "selected_bg": config.theme.selected_bg,
+                    "done_fg": config.theme.done_fg,
+                    "border": config.theme.border,
+                    "command_bar_bg": config.theme.command_bar_bg,
+                    "modal_bg": config.theme.modal_bg,
+                    "title_fg": config.theme.title_fg,
+                    "normal_bg": config.theme.normal_bg,
+                    "status_bar_fg": config.theme.status_bar_fg,
+                },
+                "keybindings": {
+                    "move_down": config.keybindings.move_down,
+                    "move_up": config.keybindings.move_up,
+                    "toggle_done": config.keybindings.toggle_done,
+                    "show_detail": config.keybindings.show_detail,
+                    "filter_all": config.keybindings.filter_all,
+                    "filter_todo": config.keybindings.filter_todo,
+                    "filter_done": config.keybindings.filter_done,
+                    "new_task": config.keybindings.new_task,
+                    "edit_task": config.keybindings.edit_task,
+                    "delete_task": config.keybindings.delete_task,
+                    "open_config": config.keybindings.open_config,
+                    "command_bar": config.keybindings.command_bar,
+                    "help": config.keybindings.help,
+                    "reload": config.keybindings.reload,
+                    "quit": config.keybindings.quit,
+                },
+            });
+            let text = serde_json::to_string_pretty(&cfg_json).unwrap_or_default();
+            Ok(json!({"content": [{"type": "text", "text": text}]}))
+        }
+        "set_config" => {
+            let key = args.get("key").and_then(|v| v.as_str()).ok_or("Missing 'key' argument")?;
+            let value = args.get("value").and_then(|v| v.as_str()).ok_or("Missing 'value' argument")?;
+            config.set(key, value).map_err(|e| e.to_string())?;
+            let text = format!("Config '{}' set to '{}'", key, value);
+            Ok(json!({"content": [{"type": "text", "text": text}]}))
+        }
         "help" => {
             let text = "\
 EasyTodo Commands (Ctrl+P):
@@ -356,7 +415,7 @@ Shortcuts:
 }
 
 fn main() {
-    let config = match Config::load() {
+    let mut config = match Config::load() {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Failed to load config: {}", e);
@@ -430,7 +489,7 @@ fn main() {
                     .to_string();
                 let args = params.get("arguments").cloned().unwrap_or(json!({}));
 
-                match handle_tools_call(&name, &args, &mut store) {
+                match handle_tools_call(&name, &args, &mut store, &mut config) {
                     Ok(result) => success(request.id, result),
                     Err(msg) => error(request.id, -32603, msg),
                 }
