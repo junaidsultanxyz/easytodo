@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-upload:
+    name: Build and upload
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - build: linux-x64
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            archive-name: easytodo-x86_64-linux
+          - build: linux-arm64
+            os: ubuntu-latest
+            rust: stable
+            target: aarch64-unknown-linux-gnu
+            archive-name: easytodo-aarch64-linux
+          - build: macos-x64
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            archive-name: easytodo-x86_64-macos
+          - build: macos-arm64
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+            archive-name: easytodo-aarch64-macos
+          - build: windows-x64
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            archive-name: easytodo-x86_64-windows
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+          targets: ${{ matrix.target }}
+
+      - name: Setup cross-compilation (Linux ARM64)
+        if: matrix.build == 'linux-arm64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Build binary
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package release (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          mkdir -p staging
+          cp target/${{ matrix.target }}/release/easytodo staging/
+          cp target/${{ matrix.target }}/release/easytodo-mcp staging/
+          cd staging
+          tar -czf ../${{ matrix.archive-name }}.tar.gz *
+          cd ..
+
+      - name: Package release (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        run: |
+          mkdir -p staging
+          cp target/${{ matrix.target }}/release/easytodo.exe staging/
+          cp target/${{ matrix.target }}/release/easytodo-mcp.exe staging/
+          cd staging
+          tar -czf ../${{ matrix.archive-name }}.tar.gz *
+          cd ..
+
+      - name: Upload release archive
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.archive-name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
