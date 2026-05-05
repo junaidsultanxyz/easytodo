@@ -23,5 +23,6 @@ pub enum Command {
     },
     Migrate(String),
     Reload,
+    Help,
     Quit,
 }

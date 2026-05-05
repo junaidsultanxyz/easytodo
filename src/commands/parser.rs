@@ -84,6 +84,7 @@ pub fn parse(input: &str) -> Result<Command> {
         "config" => parse_config(&tokens),
         "migrate" | "mv" => parse_one_arg(&tokens, "migrate"),
         "reload" | "refresh" => Ok(Command::Reload),
+        "help" => Ok(Command::Help),
         "quit" | "q" | "exit" => Ok(Command::Quit),
         _ => Err(AppError::CommandError(format!(
             "Unknown command: '{}'",

@@ -69,6 +69,7 @@ Press **Ctrl+P** to open the command bar. Commands use quoted strings.
 | `config` | Open config file in editor |
 | `migrate ~/Documents` | Move task storage directory |
 | `reload` | Reload all tasks from disk |
+| `help` | Show command reference and shortcuts |
 | `quit` | Exit EasyTodo |
 
 > `.` resolves to the currently highlighted task.
@@ -81,6 +82,7 @@ Press **Ctrl+P** to open the command bar. Commands use quoted strings.
 | `Ctrl+E` | Edit the selected task |
 | `Ctrl+D` | Delete the selected task |
 | `Ctrl+B` | Open config file |
+| `Ctrl+H` | Show help panel |
 | `Ctrl+Q` | Quit |
 | `Esc` | Close command bar / go back |
 
@@ -138,7 +140,7 @@ claude mcp add easytodo -s command -- easytodo-mcp
 }
 ```
 
-MCP tools available: `list_tasks`, `get_task`, `create_task`, `update_task`, `delete_task`, `done_task`, `undone_task`.
+MCP tools available: `list_tasks`, `get_task`, `create_task`, `update_task`, `delete_task`, `done_task`, `undone_task`, `help`.
 
 ## Configuration
 

@@ -153,6 +153,7 @@ impl Component for CommandBar {
                             easytodo::commands::Command::Migrate(path) => {
                                 Some(Action::MigrateData(path))
                             }
+                            easytodo::commands::Command::Help => Some(Action::HelpCommand),
                             easytodo::commands::Command::Reload => Some(Action::Reload),
                             easytodo::commands::Command::Quit => Some(Action::Quit),
                         };

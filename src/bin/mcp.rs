@@ -166,6 +166,11 @@ fn list_tools() -> Value {
                     "required": ["id"]
                 })
             ),
+            tool_def(
+                "help",
+                "Show available commands and shortcuts",
+                json!({"type": "object", "properties": {}})
+            ),
         ]
     })
 }
@@ -300,6 +305,51 @@ fn handle_tools_call(name: &str, args: &Value, store: &mut FsTaskStore) -> Resul
             Ok(json!({
                 "content": [{"type": "text", "text": format!("Task marked as not done: {}", id)}]
             }))
+        }
+        "help" => {
+            let text = "\
+EasyTodo Commands (Ctrl+P):
+  new \"<title>\" [\"<desc>\"] [due:YYYY-MM-DD]
+    Create a task
+
+  edit <id> [title:\"...\"] [desc:\"...\"] [due:...] [status:...]
+    Edit task fields
+
+  done|undone <id>
+    Mark done/not done
+
+  delete|clone|open <id>
+    Delete, duplicate, or edit task
+
+  list [all|todo|done]
+    List tasks with filter
+
+  config [key] [value]
+    View or set config
+
+  migrate <path>
+    Move task storage
+
+  reload | help | quit
+    Reload, show help, or exit
+
+  Aliases: rm=delete  cp=clone  ls=list  mv=migrate  q=quit  refresh=reload
+  \".\" resolves to the selected task
+
+Shortcuts:
+  j/k/up/down     Navigate
+  Enter/Space     Toggle done
+  l/o             Open detail
+  1/2/3           Filter all/todo/done
+  Ctrl+N          New task
+  Ctrl+E          Edit task
+  Ctrl+D          Delete task
+  Ctrl+B          Open config
+  Ctrl+H          Show help
+  Ctrl+P          Command bar
+  Ctrl+Q          Quit
+  Esc             Close/back";
+            Ok(json!({"content": [{"type": "text", "text": text}]}))
         }
         _ => Err(format!("Unknown tool: {}", name)),
     }

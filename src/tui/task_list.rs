@@ -149,6 +149,9 @@ impl Component for TaskList {
             KeyCode::Char('b') if event.modifiers.contains(KeyModifiers::CONTROL) => {
                 Some(Action::OpenConfig)
             }
+            KeyCode::Char('h') if event.modifiers.contains(KeyModifiers::CONTROL) => {
+                Some(Action::HelpCommand)
+            }
             KeyCode::Char('p') if event.modifiers.contains(KeyModifiers::CONTROL) => {
                 Some(Action::ToggleCommandBar)
             }

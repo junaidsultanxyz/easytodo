@@ -1,3 +1,5 @@
+use std::cell::Cell;
+
 use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
@@ -23,15 +25,18 @@ pub enum ModalContent {
         message: String,
         action: ConfirmAction,
     },
+    Help,
 }
 
 pub struct ModalState {
     pub modal: Option<ModalContent>,
+    help_scroll: Cell<usize>,
+    help_max_scroll: Cell<usize>,
 }
 
 impl ModalState {
     pub fn new() -> Self {
-        ModalState { modal: None }
+        ModalState { modal: None, help_scroll: Cell::new(0), help_max_scroll: Cell::new(0) }
     }
 
     pub fn show_detail(&mut self, index: usize) {
@@ -43,6 +48,12 @@ impl ModalState {
             message: format!("Delete '{}'?", title),
             action: ConfirmAction::Delete(id),
         });
+    }
+
+    pub fn show_help(&mut self) {
+        self.help_scroll.set(0);
+        self.help_max_scroll.set(0);
+        self.modal = Some(ModalContent::Help);
     }
 
     pub fn close(&mut self) {
@@ -64,6 +75,7 @@ impl Component for ModalState {
         let modal_height = match content {
             ModalContent::TaskDetail(_) => area.height.min(16).max(10),
             ModalContent::Confirm { .. } => 5,
+            ModalContent::Help => area.height.min(22).max(18),
         };
 
         let vert_padding = (area.height.saturating_sub(modal_height)) / 2;
@@ -85,6 +97,9 @@ impl Component for ModalState {
             ModalContent::Confirm { message, .. } => {
                 self.render_confirm(frame, modal_area, message);
             }
+            ModalContent::Help => {
+                self.render_help(frame, modal_area, app);
+            }
         }
     }
 
@@ -98,6 +113,28 @@ impl Component for ModalState {
                 KeyCode::Esc | KeyCode::Char('q') => {
                     self.close();
                     Some(Action::CloseModal)
+                }
+                _ => None,
+            },
+            ModalContent::Help => match event.code {
+                KeyCode::Esc | KeyCode::Char('q') => {
+                    self.close();
+                    Some(Action::CloseModal)
+                }
+                KeyCode::Up | KeyCode::Char('k') => {
+                    let cur = self.help_scroll.get();
+                    if cur > 0 {
+                        self.help_scroll.set(cur - 1);
+                    }
+                    None
+                }
+                KeyCode::Down | KeyCode::Char('j') => {
+                    let cur = self.help_scroll.get();
+                    let max = self.help_max_scroll.get();
+                    if cur < max {
+                        self.help_scroll.set(cur + 1);
+                    }
+                    None
                 }
                 _ => None,
             },
@@ -213,5 +250,127 @@ impl ModalState {
             Paragraph::new(text).style(Style::default().bg(Color::Black)),
             inner,
         );
+    }
+
+    fn render_help(&self, frame: &mut Frame, area: Rect, app: &App) {
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(app.theme.border))
+            .title(" Help ")
+            .title_style(Style::default().fg(app.theme.title_fg));
+
+        let inner = block.inner(area);
+        frame.render_widget(Clear, area);
+        frame.render_widget(block, area);
+
+        let accent = Style::default().fg(app.theme.status_bar_fg);
+        let bright = Style::default().fg(Color::White);
+        let desc = Style::default().fg(Color::Rgb(150, 155, 170));
+
+        let all_lines = vec![
+            Line::from(vec![Span::styled("Commands (Ctrl+P):", accent)]),
+            Line::from(Span::raw("")),
+            Line::from(vec![
+                Span::styled("  new ", bright),
+                Span::styled("\"<title>\" [\"<desc>\"] [due:YYYY-MM-DD]", bright),
+            ]),
+            Line::from(Span::styled("    Create a task", desc)),
+            Line::from(Span::raw("")),
+            Line::from(vec![
+                Span::styled("  edit <id> ", bright),
+                Span::styled("[title:\"...\"] [desc:\"...\"] [due:...] [status:...]", bright),
+            ]),
+            Line::from(Span::styled("    Edit task fields", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  done|undone <id>", bright)),
+            Line::from(Span::styled("    Mark done/not done", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  delete|clone|open <id>", bright)),
+            Line::from(Span::styled("    Delete, duplicate, or edit task", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  list [all|todo|done]", bright)),
+            Line::from(Span::styled("    List tasks with filter", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  config [key] [value]", bright)),
+            Line::from(Span::styled("    View or set config", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  migrate <path>", bright)),
+            Line::from(Span::styled("    Move task storage", desc)),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  reload | help | quit", bright)),
+            Line::from(Span::styled("    Reload, show help, or exit", desc)),
+            Line::from(Span::raw("")),
+            Line::from(vec![
+                Span::styled("  Aliases: ", accent),
+                Span::styled("rm=delete  cp=clone  ls=list  mv=migrate  q=quit  refresh=reload", desc),
+            ]),
+            Line::from(Span::styled("  \".\" resolves to the selected task", desc)),
+            Line::from(Span::raw("")),
+            Line::from(vec![Span::styled("Shortcuts:", accent)]),
+            Line::from(vec![
+                Span::styled("  j/k/↑↓        ", bright),
+                Span::styled("Navigate", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Enter/Space   ", bright),
+                Span::styled("Toggle done", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  l/o            ", bright),
+                Span::styled("Open detail", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  1/2/3         ", bright),
+                Span::styled("Filter all/todo/done", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+N        ", bright),
+                Span::styled("New task", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+E        ", bright),
+                Span::styled("Edit task", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+D        ", bright),
+                Span::styled("Delete task", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+B        ", bright),
+                Span::styled("Open config", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+H        ", bright),
+                Span::styled("Show help", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+P        ", bright),
+                Span::styled("Command bar", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Ctrl+Q        ", bright),
+                Span::styled("Quit", desc),
+            ]),
+            Line::from(vec![
+                Span::styled("  Esc           ", bright),
+                Span::styled("Close/back", desc),
+            ]),
+            Line::from(Span::raw("")),
+            Line::from(Span::styled("  [q/Esc to close]  ", desc)),
+        ];
+
+        let max = all_lines.len().saturating_sub(1);
+        self.help_max_scroll.set(max);
+        let scroll = self.help_scroll.get().min(max);
+        self.help_scroll.set(scroll);
+
+        let lines: Vec<Line> = all_lines.iter().skip(scroll).cloned().collect();
+        let text = Text::from(lines);
+
+        let paragraph = Paragraph::new(text)
+            .style(Style::default().bg(app.theme.modal_bg))
+            .wrap(Wrap { trim: false });
+
+        frame.render_widget(paragraph, inner);
     }
 }

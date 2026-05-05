@@ -38,6 +38,7 @@ pub enum Action {
     },
     MigrateData(String),
     Reload,
+    HelpCommand,
 
     SetStatusMessage(String),
 

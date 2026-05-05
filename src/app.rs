@@ -387,6 +387,10 @@ impl App {
                     }
                 }
             }
+            Action::HelpCommand => {
+                self.mode = AppMode::Modal;
+                self.modal.show_help();
+            }
             Action::Reload => {
                 self.config = Config::load().unwrap_or_else(|_| self.config.clone());
                 if let Err(e) = self.refresh_tasks() {
@@ -556,6 +560,8 @@ fn handle_events(app: &mut App) -> Result<()> {
         if let Event::Key(key) = event {
             let is_ctrl_p = key.code == KeyCode::Char('p')
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+            let is_ctrl_h = key.code == KeyCode::Char('h')
+                && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_n = key.code == KeyCode::Char('n')
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_e = key.code == KeyCode::Char('e')
@@ -564,6 +570,11 @@ fn handle_events(app: &mut App) -> Result<()> {
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
             let is_ctrl_b = key.code == KeyCode::Char('b')
                 && key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL);
+
+            if is_ctrl_h {
+                app.handle_action(Action::HelpCommand)?;
+                return Ok(());
+            }
 
             let action = match app.mode {
                 AppMode::Normal => app.task_list.handle_input(&key),
