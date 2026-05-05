@@ -23,6 +23,12 @@ make install-local  # ~/.local/bin/easytodo
 cargo install easytodo
 ```
 
+### Via npm
+
+```bash
+npm install -g easytodo-tui
+```
+
 ### Via release binary
 
 Download the latest binary from [Releases](https://github.com/junaidxyz/easytodo/releases), then:

@@ -1,6 +1,6 @@
 {
   "name": "easytodo-tui",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A terminal-based todo app with file-based task storage, command bar, and MCP server",
   "bin": {
     "easytodo": "bin/easytodo.js",
