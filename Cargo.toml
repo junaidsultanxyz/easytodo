@@ -7,8 +7,16 @@ keywords = ["todo", "tui", "terminal", "productivity", "mcp"]
 categories = ["command-line-utilities", "development-tools"]
 authors = ["junaidxyz"]
 license = "MIT"
-repository = "https://github.com/junaidxyz/easytodo"
+repository = "https://github.com/junaidsultanxyz/easytodo"
 readme = "README.md"
+
+[[bin]]
+name = "easytodo"
+path = "src/main.rs"
+
+[[bin]]
+name = "easytodo-mcp"
+path = "src/bin/mcp.rs"
 
 [dev-dependencies]
 tempfile = "3"
